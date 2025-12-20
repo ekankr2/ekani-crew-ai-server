@@ -9,13 +9,26 @@ from app.consult.application.port.consult_repository_port import ConsultReposito
 from app.consult.application.port.ai_counselor_port import AICounselorPort
 from app.auth.adapter.input.web.auth_dependency import get_current_user_id
 from app.consult.domain.message import Message
+from app.user.infrastructure.repository.mysql_user_repository import MySQLUserRepository
+from app.consult.infrastructure.repository.mysql_consult_repository import MySQLConsultRepository
+from app.consult.infrastructure.service.openai_counselor_adapter import OpenAICounselorAdapter
+from config.database import get_db_session
+from config.settings import get_settings
 
 consult_router = APIRouter()
 
-# Global repository instances (will be injected in tests)
-_user_repository: UserRepositoryPort | None = None
-_consult_repository: ConsultRepositoryPort | None = None
-_ai_counselor: AICounselorPort | None = None
+
+def get_user_repository() -> UserRepositoryPort:
+    return MySQLUserRepository(get_db_session())
+
+
+def get_consult_repository() -> ConsultRepositoryPort:
+    return MySQLConsultRepository(get_db_session())
+
+
+def get_ai_counselor() -> AICounselorPort:
+    settings = get_settings()
+    return OpenAICounselorAdapter(api_key=settings.OPENAI_API_KEY)
 
 
 class SendMessageRequest(BaseModel):
@@ -23,7 +36,12 @@ class SendMessageRequest(BaseModel):
 
 
 @consult_router.post("/start")
-def start_consult(user_id: str = Depends(get_current_user_id)):
+def start_consult(
+    user_id: str = Depends(get_current_user_id),
+    user_repo: UserRepositoryPort = Depends(get_user_repository),
+    consult_repo: ConsultRepositoryPort = Depends(get_consult_repository),
+    ai_counselor: AICounselorPort = Depends(get_ai_counselor),
+):
     """
     상담 세션을 시작한다.
 
@@ -32,42 +50,20 @@ def start_consult(user_id: str = Depends(get_current_user_id)):
     3. StartConsultUseCase 실행
     4. 세션 ID 반환
     """
-    print("hello")
-    # User 조회
-    if not _user_repository:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="User repository가 설정되지 않았습니다",
-        )
-
-    user = _user_repository.find_by_id(user_id)
+    user = user_repo.find_by_id(user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="사용자를 찾을 수 없습니다",
         )
 
-    # MBTI, Gender 확인
     if not user.mbti or not user.gender:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="프로필 정보(MBTI, 성별)를 먼저 입력해주세요",
         )
 
-    # Use case 실행
-    if not _consult_repository:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Consult repository가 설정되지 않았습니다",
-        )
-
-    if not _ai_counselor:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="AI counselor가 설정되지 않았습니다",
-        )
-
-    use_case = StartConsultUseCase(_consult_repository, _ai_counselor)
+    use_case = StartConsultUseCase(consult_repo, ai_counselor)
     result = use_case.execute(user_id=user_id, mbti=user.mbti, gender=user.gender)
 
     return result
@@ -77,7 +73,9 @@ def start_consult(user_id: str = Depends(get_current_user_id)):
 def send_message(
     session_id: str,
     request: SendMessageRequest,
-    user_id: str = Depends(get_current_user_id)
+    user_id: str = Depends(get_current_user_id),
+    consult_repo: ConsultRepositoryPort = Depends(get_consult_repository),
+    ai_counselor: AICounselorPort = Depends(get_ai_counselor),
 ):
     """
     메시지를 전송하고 AI 응답을 받는다.
@@ -86,19 +84,7 @@ def send_message(
     2. 메시지 전송
     3. AI 응답 반환
     """
-    if not _consult_repository:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Consult repository가 설정되지 않았습니다",
-        )
-
-    if not _ai_counselor:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="AI counselor가 설정되지 않았습니다",
-        )
-
-    use_case = SendMessageUseCase(_consult_repository, _ai_counselor)
+    use_case = SendMessageUseCase(consult_repo, ai_counselor)
 
     try:
         result = use_case.execute(
@@ -126,20 +112,17 @@ def send_message(
 
 
 @consult_router.get("/history")
-def get_history(user_id: str = Depends(get_current_user_id)):
+def get_history(
+    user_id: str = Depends(get_current_user_id),
+    consult_repo: ConsultRepositoryPort = Depends(get_consult_repository),
+):
     """
     완료된 상담 세션 히스토리를 조회한다.
 
     Returns:
         완료된 상담 세션 목록 (최신순)
     """
-    if not _consult_repository:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Consult repository가 설정되지 않았습니다",
-        )
-
-    sessions = _consult_repository.find_completed_by_user_id(user_id)
+    sessions = consult_repo.find_completed_by_user_id(user_id)
 
     return {
         "sessions": [
@@ -159,7 +142,9 @@ def get_history(user_id: str = Depends(get_current_user_id)):
 def send_message_stream(
     session_id: str,
     request: SendMessageRequest,
-    user_id: str = Depends(get_current_user_id)
+    user_id: str = Depends(get_current_user_id),
+    consult_repo: ConsultRepositoryPort = Depends(get_consult_repository),
+    ai_counselor: AICounselorPort = Depends(get_ai_counselor),
 ):
     """
     메시지를 전송하고 AI 응답을 SSE 스트리밍으로 받는다.
@@ -168,20 +153,8 @@ def send_message_stream(
     2. 메시지 저장
     3. AI 응답 스트리밍 반환
     """
-    if not _consult_repository:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Consult repository가 설정되지 않았습니다",
-        )
-
-    if not _ai_counselor:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="AI counselor가 설정되지 않았습니다",
-        )
-
     # 세션 조회 및 소유자 검증
-    session = _consult_repository.find_by_id(session_id)
+    session = consult_repo.find_by_id(session_id)
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -204,19 +177,19 @@ def send_message_stream(
     # 사용자 메시지 저장
     user_message = Message(role="user", content=request.content)
     session.add_message(user_message)
-    _consult_repository.save(session)
+    consult_repo.save(session)
 
     # SSE 스트리밍 생성
     def event_generator():
         full_response = ""
-        for chunk in _ai_counselor.generate_response_stream(session, request.content):
+        for chunk in ai_counselor.generate_response_stream(session, request.content):
             full_response += chunk
             yield f"data: {chunk}\n\n"
 
         # AI 응답 저장
         ai_message = Message(role="assistant", content=full_response)
         session.add_message(ai_message)
-        _consult_repository.save(session)
+        consult_repo.save(session)
 
     return StreamingResponse(
         event_generator(),
