@@ -8,6 +8,7 @@ langchain
 openai
 sqlalchemy
 pymysql
+redis
 pytest
 pytest-mock
 cryptography

@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     # MySQL URL (필수)
     MYSQL_URL: str
 
+    # Redis URL (필수)
+    REDIS_URL: str
+
     # OpenAI Settings (필수)
     OPENAI_API_KEY: str
 

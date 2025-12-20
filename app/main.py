@@ -6,11 +6,12 @@ from app.converter.adapter.input.web.converter_router import converter_router
 from app.router import setup_routers
 from app.user.adapter.input.web.user_router import user_router
 from config.database import engine, Base
+from config.redis import redis_client
 from fastapi.middleware.cors import CORSMiddleware
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_: FastAPI):
     """애플리케이션 시작/종료 시 실행되는 로직"""
     # Startup
     print("[+] Starting HexaCore AI Server...")
@@ -19,12 +20,17 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     print("[+] Database tables created")
 
+    # Redis 연결 테스트
+    redis_client.ping()
+    print("[+] Redis connected")
+
     yield
 
     # Shutdown
     print("[-] Shutting down HexaCore AI Server...")
     engine.dispose()
-    print("[+] Database connections closed")
+    redis_client.close()
+    print("[+] Database and Redis connections closed")
 
 
 app = FastAPI(
