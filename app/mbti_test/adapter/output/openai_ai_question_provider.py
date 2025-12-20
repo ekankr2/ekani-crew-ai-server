@@ -62,9 +62,14 @@ def _build_system_prompt() -> str:
 def _build_user_prompt(command: GenerateAIQuestionCommand) -> str:
     targets = _turn_target_dimensions(command.turn)
     mode_line = (
-        "질문 모드: 돌발(surprise) - 예상치 못한 관점/상황을 제시하되, 특정 차원 단서를 얻어라."
+        "질문 모드: 돌발(surprise)\n"
+        "- 질문에는 반드시 '예상 밖 상황/제약'을 1개 이상 포함해라. (시간 압박/역할 강제/갑작스런 변수/낯선 사람·환경)\n"
+        "- 평범한 MBTI 질문(모임이 좋나, 혼자가 좋나 등)으로 묻지 마라.\n"
+        "- 사용자가 둘 중 하나를 선택해야 하는 형태로 묻고, 이유 + 실제 경험 예시 1개를 요구해라.\n"
         if command.question_mode == "surprise"
-        else "질문 모드: 일반(normal) - 대화 맥락을 이어서 자연스럽게 후속 질문을 해라."
+        else
+        "질문 모드: 일반(normal)\n"
+        "- 대화 맥락을 이어서 자연스럽게 후속 질문을 해라.\n"
     )
 
     # 턴 1은 라포/자가진단이지만, 그래도 차원 단서를 살짝 볼 수 있게 설계 가능
