@@ -270,7 +270,7 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 #### Chat Domain (Team Match)
 
-- [ ] `CHAT-1` [Chat] 매칭 성공 시, 자동으로 채팅방이 생성되고 메시지를 DB에 저장할 수 있다
+- [-] `CHAT-1` [Chat] 매칭 성공 시, 자동으로 채팅방이 생성되고 메시지를 DB에 저장할 수 있다
   - **Domain**: `ChatRoom` (id, match_id, created_at)
   - **Domain**: `ChatMessage` (id, room_id, sender_id, content, created_at)
   - **Repository**: `ChatRoomRepository` - 채팅방 저장/조회
@@ -281,9 +281,9 @@ Person C,D ─→ 버그 픽스, UX 개선
   - **UseCase**: `SaveChatMessageUseCase` - 메시지 저장
   - **✅ 인수 조건**: 매칭 시 채팅방 자동 생성, 메시지 DB 영속화
 
-- [ ] `CHAT-2` [Chat] 사용자로서, 실시간으로 메시지를 주고받고 싶다
+- [x] `CHAT-2` [Chat] 사용자로서, 실시간으로 메시지를 주고받고 싶다
   - **Adapter**: WebSocket 핸들러 (FastAPI WebSocket)
-  - **UseCase**: `SendMessageUseCase` - 메시지 전송 및 DB 저장
+  - **UseCase**: `SaveChatMessageUseCase` - 메시지 전송 및 DB 저장
   - **API**: `WS /chat/{room_id}`
   - **✅ 인수 조건**: WebSocket 연결, 실시간 메시지 송수신, 메시지 DB 영속화
 
