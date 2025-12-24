@@ -35,13 +35,36 @@ class AnswerQuestionService(AnswerQuestionUseCase):
         if not session:
             raise ValueError(f"Session not found: {command.session_id}")
 
-        # 2. Save answer and increment question index
+        # 2. 인사 응답 처리 (greeting 후 첫 답변)
+        if not session.greeting_completed:
+            # 인사에 대한 응답은 저장 안 함 (무시)
+            session.greeting_completed = True
+
+            # 첫 번째 질문 반환 (index 0)
+            first_question = self._human_question_provider.get_question_from_list(
+                0, session.selected_human_questions
+            )
+
+            # 질문 히스토리에 저장
+            if first_question:
+                session.questions.append(first_question.content)
+
+            self._session_repository.save(session)
+
+            return AnswerQuestionResponse(
+                question_number=1,  # 1번 질문
+                total_questions=TOTAL_QUESTION_COUNT,
+                next_question=first_question,
+                is_completed=False,
+            )
+
+        # 3. 정상 답변 처리 - 답변 저장 및 인덱스 증가
         session.answers.append({"content": command.answer})
         session.current_question_index += 1
 
         current_index = session.current_question_index
 
-        # 3. Check if completed
+        # 4. 완료 체크
         if current_index >= TOTAL_QUESTION_COUNT:
             session.status = TestStatus.COMPLETED
             self._session_repository.save(session)
@@ -52,7 +75,7 @@ class AnswerQuestionService(AnswerQuestionUseCase):
                 is_completed=True,
             )
 
-        # 4. Get next question based on phase
+        # 5. 다음 질문 가져오기
         if current_index < HUMAN_QUESTION_COUNT:
             # Human phase (questions 0-11) - 세션에 저장된 랜덤 선택 질문 사용
             next_question = self._human_question_provider.get_question_from_list(
@@ -86,7 +109,7 @@ class AnswerQuestionService(AnswerQuestionUseCase):
                     source=MessageSource.AI,
                 )
 
-        # 5. Save question to session
+        # 6. 질문 히스토리에 저장
         if next_question:
             session.questions.append(next_question.content)
 
