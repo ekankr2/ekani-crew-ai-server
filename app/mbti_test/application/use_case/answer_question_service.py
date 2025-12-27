@@ -71,6 +71,8 @@ class AnswerQuestionService(AnswerQuestionUseCase):
 
         # 3. 정상 답변 처리 - Turn 생성 및 저장
         current_index = session.current_question_index
+        print(f"[DEBUG] Question {current_index + 1}: {session.pending_question}")
+        print(f"[DEBUG] Answer: {command.answer}")
 
         # 답변 분석: Human(0-11) vs AI(12-23)
         if current_index < HUMAN_QUESTION_COUNT:
@@ -123,11 +125,18 @@ class AnswerQuestionService(AnswerQuestionUseCase):
             }
             session.human_test_result = analysis_result
 
-        # 5. 매 질문마다 부분 MBTI 분석
-        if current_index <= HUMAN_QUESTION_COUNT:
-            current_answers = [t.answer for t in session.turns]
-            partial_analysis_result = calculate_partial_mbti(current_answers)
-            print(f"Partial MBTI Analysis for question {current_index}: {partial_analysis_result}")
+        # 5. 매 질문마다 부분 MBTI 분석 (Human phase 답변 기반 + AI phase 점수 누적)
+        human_answers = [t.answer for t in session.turns[:HUMAN_QUESTION_COUNT]]
+        partial_analysis_result = calculate_partial_mbti(human_answers)
+
+        # AI phase의 점수도 누적 (turn에 저장된 scores 사용)
+        if current_index > HUMAN_QUESTION_COUNT:
+            for turn in session.turns[HUMAN_QUESTION_COUNT:]:
+                for side, score_val in turn.scores.items():
+                    if side in partial_analysis_result["scores"]:
+                        partial_analysis_result["scores"][side] += score_val
+
+        print(f"Partial MBTI Analysis for question {current_index}: {partial_analysis_result}")
 
         # 6. 전체 완료 체크
         if current_index >= TOTAL_QUESTION_COUNT:

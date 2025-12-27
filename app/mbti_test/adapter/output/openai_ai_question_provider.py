@@ -16,18 +16,19 @@ from app.mbti_test.domain.models import (
 )
 
 def _turn_target_dimensions(turn: int) -> List[str]:
-    # 턴 목표: 1 라포/자가진단, 2 E/I, 3 S/N, 4 T/F, 5 J/P
+    """
+    각 턴별 목표 차원을 반환합니다.
+    12개 턴에 걸쳐 각 차원을 3번씩 질문합니다.
+    """
+    # 턴 1: 라포/자가진단
     if turn == 1:
-        return []  # 라포/자가진단은 특정 차원 강제X (다만 질문은 해야 함)
-    if turn == 2:
-        return ["E/I"]
-    if turn == 3:
-        return ["S/N"]
-    if turn == 4:
-        return ["T/F"]
-    if turn == 5:
-        return ["J/P"]
-    return []
+        return []
+
+    # 4개 차원을 순환 (턴 2-12에서 각 차원 약 3번씩)
+    dimension_cycle = ["E/I", "S/N", "T/F", "J/P"]
+    # 턴 2부터 시작, 0-indexed로 변환 후 순환
+    index = (turn - 2) % 4
+    return [dimension_cycle[index]]
 
 
 def _strip_markdown_fences(text: str) -> str:
