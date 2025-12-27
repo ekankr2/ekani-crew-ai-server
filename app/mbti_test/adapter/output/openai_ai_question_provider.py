@@ -10,6 +10,8 @@ from app.mbti_test.domain.models import (
     AIQuestion,
     AIQuestionResponse,
     GenerateAIQuestionCommand,
+    AnalyzeAnswerCommand,
+    AnalyzeAnswerResponse,
     MessageRole,
 )
 
@@ -50,12 +52,20 @@ def _build_system_prompt() -> str:
         "너는 MBTI 테스트를 진행하는 질문자다.\n"
         "규칙:\n"
         "- 매 턴 질문은 1~2개만 만든다.\n"
-        "- 각 질문은 2~3문장으로, 사용자의 '구체 사례'를 요청한다.\n"
-        "- 정보가 부족하면 '구체 예시 한 개 더'를 요청하는 재질문을 포함한다.\n"
+        "- 각 질문은 2~3문장으로 요청한다.\n"
+        "- 정보가 부족하면 비슷한 유형의 질문을 요청하는 재질문을 포함한다.\n"
         "- 사과하지 말고, AI/모델/시스템 같은 자기 언급을 하지 않는다.\n"
         "- 출력은 반드시 JSON 하나이며, 아래 스키마를 지킨다.\n"
-        '  {"questions":[{"text":"...", "target_dimensions":["E/I"]} ...], "turn": n}\n'
+        '  {\"questions\":[{\"text\":\"...\", \"target_dimensions\":[\"E/I\"]}], \"turn\": n}\n'
         "- 질문 외의 설명/장식 문구를 넣지 않는다.\n"
+        "톤/스타일:\n"
+        "- 한국어 캐주얼 반말, 친근한 말투. 호칭 없이 '너'.\n"
+        "- 이모지 1~2개와 감탄사(헐, ㅋㅋ 등) 섞기.\n"
+        "- 상황 제시 후 선택/묘사 유도형 질문으로 마무리(물음표 필수).\n"
+        "- 생활감 있는 소재(모임, 여행, SNS, 주말 계획 등)를 사용.\n"
+        "- target_dimensions에 맞는 상황/어휘 선택(E/I: 사람 많은 자리 vs 혼자 등).\n"
+        "- 최근 대화/사용자 키워드(예: 낚시)만 집착하지 말 것. 동일 주제는 연속 3턴 이상 반복 금지.\n"
+        "- 각 턴은 목표 차원(E/I, S/N, T/F, J/P)에 맞춰 다른 상황/맥락을 사용. 직전 턴에서 쓴 소재/명사를 다시 쓰지 말 것.\n"
     )
 
 
@@ -92,6 +102,40 @@ def _build_user_prompt(command: GenerateAIQuestionCommand) -> str:
         "대화 히스토리:\n"
         f"{history_block}\n"
         "위 히스토리를 바탕으로 다음 질문 JSON만 출력해라."
+    )
+
+
+def _build_analysis_system_prompt() -> str:
+    """답변 분석용 시스템 프롬프트"""
+    return (
+        "너는 MBTI 전문 분석가다. 사용자의 답변을 분석하여 MBTI 성향 점수를 매긴다.\n"
+        "규칙:\n"
+        "- 질문과 답변의 맥락을 고려하여 가장 관련 있는 MBTI 차원 1개를 선택한다.\n"
+        "- 차원: EI(외향/내향), SN(감각/직관), TF(사고/감정), JP(판단/인식)\n"
+        "- 해당 차원의 양쪽에 각각 0~10점 사이의 점수를 부여한다.\n"
+        "- 점수는 답변에서 드러난 성향의 강도를 반영한다.\n"
+        "- 출력은 반드시 JSON 하나이며, 아래 스키마를 지킨다.\n"
+        '  {"dimension": "EI", "scores": {"E": 7, "I": 2}, "reasoning": "분석 근거"}\n'
+        "- reasoning은 한국어로 1-2문장으로 간단히 작성한다.\n"
+    )
+
+
+def _build_analysis_user_prompt(command: AnalyzeAnswerCommand) -> str:
+    """답변 분석용 유저 프롬프트"""
+    # 히스토리 구성
+    history_lines = []
+    for msg in command.history:
+        role = msg.role.value if isinstance(msg.role, MessageRole) else str(msg.role)
+        history_lines.append(f"{role}: {msg.content}")
+
+    history_block = "\n".join(history_lines).strip() or "(이전 대화 없음)"
+
+    return (
+        "이전 대화 맥락:\n"
+        f"{history_block}\n\n"
+        f"현재 질문: {command.question}\n"
+        f"사용자 답변: {command.answer}\n\n"
+        "위 답변을 분석하여 MBTI 점수 JSON을 출력해라."
     )
 
 
@@ -136,6 +180,60 @@ class OpenAIQuestionProvider(AIQuestionProviderPort):
             raise ValueError("LLM returned invalid questions payload")
 
         return AIQuestionResponse(turn=turn, questions=questions)
+
+    def analyze_answer(self, command: AnalyzeAnswerCommand) -> AnalyzeAnswerResponse:
+        """AI를 사용하여 답변을 분석하고 MBTI 점수를 반환한다."""
+        system_prompt = _build_analysis_system_prompt()
+        user_prompt = _build_analysis_user_prompt(command)
+
+        resp = self.openai_client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_format={"type": "json_object"},
+        )
+
+        content = resp.choices[0].message.content
+        data = _parse_json_object(content)
+
+        dimension = data.get("dimension", "EI")
+        scores = data.get("scores", {})
+        reasoning = data.get("reasoning", "")
+
+        # 차원 유효성 검사
+        valid_dimensions = {"EI", "SN", "TF", "JP"}
+        if dimension not in valid_dimensions:
+            dimension = "EI"  # fallback
+
+        # 점수 파싱 및 우세한 쪽 결정
+        dimension_sides = {
+            "EI": ("E", "I"),
+            "SN": ("S", "N"),
+            "TF": ("T", "F"),
+            "JP": ("J", "P"),
+        }
+        side_a, side_b = dimension_sides[dimension]
+
+        score_a = int(scores.get(side_a, 0))
+        score_b = int(scores.get(side_b, 0))
+
+        if score_a >= score_b:
+            winning_side = side_a
+            winning_score = score_a
+        else:
+            winning_side = side_b
+            winning_score = score_b
+
+        return AnalyzeAnswerResponse(
+            dimension=dimension,
+            scores={side_a: score_a, side_b: score_b},
+            side=winning_side,
+            score=winning_score,
+            reasoning=reasoning,
+        )
+
 
 # (선택) settings.py 기반 클라이언트 팩토리: 기존 프로젝트 스타일에 맞게 라우터에서 사용
 def create_openai_question_provider_from_settings() -> OpenAIQuestionProvider:
