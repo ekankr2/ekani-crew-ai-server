@@ -162,7 +162,7 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 ##### 🎯 결과 합산 (하민, 대호 협업)
 
-- [ ] `MBTI-4` [MBTI] 사용자로서, 두 테스트 결과를 합산한 정밀한 MBTI를 받고 싶다
+- [x] `MBTI-4` [MBTI] 사용자로서, 두 테스트 결과를 합산한 정밀한 MBTI를 받고 싶다
   - **Domain**: `MBTIResult` (mbti, confidence, human_score, ai_score, analysis)
   - **UseCase**: `CalculateCombinedMBTIUseCase` - 두 테스트 결과 합산
   - **API**: `GET /mbti-test/result` → 합산된 MBTI 결과
@@ -210,7 +210,7 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 #### Chat Domain (Team Match)
 
-- [ ] `CHAT-1` [Chat] 매칭 성공 시, 자동으로 채팅방이 생성되고 메시지를 DB에 저장할 수 있다
+- [x] `CHAT-1` [Chat] 매칭 성공 시, 자동으로 채팅방이 생성되고 메시지를 DB에 저장할 수 있다
   - **Domain**: `ChatRoom` (id, match_id, created_at)
   - **Domain**: `ChatMessage` (id, room_id, sender_id, content, created_at)
   - **Repository**: `ChatRoomRepository` - 채팅방 저장/조회
@@ -221,7 +221,7 @@ Person C,D ─→ 버그 픽스, UX 개선
   - **UseCase**: `SaveChatMessageUseCase` - 메시지 저장
   - **✅ 인수 조건**: 매칭 시 채팅방 자동 생성, 메시지 DB 영속화
 
-- [ ] `CHAT-2` [Chat] 사용자로서, 실시간으로 메시지를 주고받고 싶다
+- [x] `CHAT-2` [Chat] 사용자로서, 실시간으로 메시지를 주고받고 싶다
   - **Adapter**: WebSocket 핸들러 (FastAPI WebSocket)
   - **UseCase**: `SendMessageUseCase` - 메시지 전송 및 DB 저장
   - **API**: `WS /chat/{room_id}`
@@ -290,6 +290,45 @@ Person C,D ─→ 버그 픽스, UX 개선
 - [ ] `PAY-2` [Payment] 사용자로서, 간편하게 결제하고 싶다
   - **Adapter**: 결제 API 연동
   - **✅ 인수 조건**: 실결제 처리, 결제 내역 저장
+
+---
+
+### 인프라 개선 (스케일업 대비)
+
+> **목표**: 멀티 서버 환경 대응 및 배포 안정성 확보
+
+#### 실시간 매칭 알림
+
+- [ ] `MATCH-6` [Matching] 대기 중인 사용자가 매칭되면 즉시 알림을 받고 싶다
+  - **현재 문제**: 폴링 방식으로 최대 3초 딜레이 발생
+  - **해결**: WebSocket으로 매칭 대기 → 매칭 시 서버에서 즉시 push
+  - **API**: `WS /ws/matching/{user_id}` → 매칭 대기 및 알림
+  - **✅ 인수 조건**: 매칭 즉시 양쪽 사용자에게 알림
+
+#### 멀티 서버 지원 (Redis Pub/Sub)
+
+- [ ] `CHAT-5` [Chat] 서버가 여러 대일 때도 채팅 메시지가 전달되어야 한다
+  - **현재 문제**: `ConnectionManager`가 인메모리라 서버 간 브로드캐스트 불가
+  - **해결**: Redis Pub/Sub으로 메시지 브로드캐스트
+  - **구조**: `User A (Server 1) → Redis Pub → Server 2 → User B`
+  - **✅ 인수 조건**: 다른 서버에 연결된 사용자에게도 메시지 전달
+
+- [ ] `MATCH-7` [Matching] 서버가 여러 대일 때도 매칭 알림이 전달되어야 한다
+  - **해결**: Redis Pub/Sub으로 매칭 알림 브로드캐스트
+  - **구조**: `User A 매칭 요청 → User B 매칭됨 → Redis Pub → User B의 서버 → WebSocket 알림`
+  - **✅ 인수 조건**: 다른 서버에서 대기 중인 사용자에게도 매칭 알림
+
+#### 배포 안정성
+
+- [ ] `CHAT-6` [Chat] 배포 시 WebSocket 연결이 끊겨도 자동 재연결되어야 한다
+  - **현재 문제**: 배포 시 모든 WebSocket 연결 끊김, 사용자가 수동 새로고침 필요
+  - **해결 (Frontend)**: WebSocket `onclose` 시 자동 재연결 로직
+  - **✅ 인수 조건**: 연결 끊김 후 3초 내 자동 재연결, 재연결 시 히스토리 유지
+
+- [ ] `MATCH-8` [Matching] 배포 후에도 유저 상태가 정리되어야 한다
+  - **현재 문제**: 배포 시 인메모리 상태 손실, Redis 상태는 남음
+  - **해결**: CHATTING 상태에 TTL 추가 + 프론트 heartbeat로 갱신
+  - **✅ 인수 조건**: 5분간 heartbeat 없으면 상태 자동 만료
 
 ---
 
