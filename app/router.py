@@ -15,6 +15,8 @@ from app.chat.adapter.input.web.chat_websocket_router import chat_websocket_rout
 from app.chat.adapter.input.web.chat_router import chat_router
 from app.chat.infrastructure.model.chat_room_model import ChatRoomModel  # noqa: F401
 from app.chat.infrastructure.model.chat_message_model import ChatMessageModel  # noqa: F401
+from app.community.adapter.input.web.topic_router import topic_router
+from app.community.infrastructure.model.topic_model import TopicModel  # noqa: F401
 def setup_routers(app: FastAPI) -> None:
     """모든 라우터를 FastAPI 앱에 등록한다."""
     app.include_router(google_oauth_router, prefix="/auth", tags=["Auth"])
@@ -24,4 +26,5 @@ def setup_routers(app: FastAPI) -> None:
     app.include_router(chat_router, tags=["Chat"])
     app.include_router(chat_websocket_router, tags=["Chat"])
     app.include_router(match_router, prefix="/match", tags=["Match"])
+    app.include_router(topic_router, prefix="/community", tags=["Community"])
 

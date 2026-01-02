@@ -297,7 +297,7 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 ##### 이주의 토픽
 
-- [ ] `COMM-1` [Community] 운영자로서, 이주의 토픽을 등록하고 싶다
+- [x] `COMM-1` [Community] 운영자로서, 이주의 토픽을 등록하고 싶다
   - **Domain**: `Topic` (id, title, description, start_date, end_date, is_active, created_at)
   - **Repository**: `TopicRepository` - 토픽 저장/조회
   - **API**: `POST /community/topics` → 토픽 등록 (관리자)
