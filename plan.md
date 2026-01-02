@@ -321,7 +321,7 @@ Person C,D ─→ 버그 픽스, UX 개선
 
 ##### 밸런스 게임
 
-- [ ] `COMM-4` [Community] 사용자로서, MBTI 밸런스 게임에 참여하고 싶다
+- [x] `COMM-4` [Community] 사용자로서, MBTI 밸런스 게임에 참여하고 싶다
   - **Domain**: `BalanceGame` (id, question, option_left, option_right, week_of, is_active, created_at)
   - **Domain**: `BalanceVote` (id, game_id, user_id, user_mbti, choice='left'|'right', created_at)
   - **Adapter**: `AIBalanceGameGenerator` - AI가 매주 밸런스 게임 주제 생성
