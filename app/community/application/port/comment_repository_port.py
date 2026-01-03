@@ -34,3 +34,12 @@ class CommentRepositoryPort(ABC):
     ) -> int:
         """타겟 타입과 ID로 댓글 수를 조회한다"""
         pass
+
+    @abstractmethod
+    def count_all_by_target_type(self, target_type: CommentTargetType) -> dict[str, int]:
+        """특정 타겟 타입의 모든 댓글 수를 한 번에 조회한다
+
+        Returns:
+            {target_id: count, ...}
+        """
+        pass

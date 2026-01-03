@@ -8,7 +8,6 @@ from app.community.application.port.balance_vote_repository_port import (
     BalanceVoteRepositoryPort,
 )
 from app.community.application.port.comment_repository_port import CommentRepositoryPort
-from app.community.domain.balance_game import VoteChoice
 
 
 @dataclass
@@ -46,18 +45,21 @@ class GetBalanceGameListUseCase:
         """밸런스 게임 목록을 조회한다"""
         games = self._game_repo.find_all()
 
+        # N+1 문제 해결: 한 번의 쿼리로 모든 투표/댓글 수 조회
+        vote_counts = self._vote_repo.count_all_grouped_by_game()
+        comment_counts = self._comment_repo.count_all_by_target_type("balance_game")
+
         result = []
         for game in games:
-            left_count = self._vote_repo.count_by_choice(game.id, VoteChoice.LEFT)
-            right_count = self._vote_repo.count_by_choice(game.id, VoteChoice.RIGHT)
+            counts = vote_counts.get(game.id, {"left": 0, "right": 0})
+            left_count = counts["left"]
+            right_count = counts["right"]
             total = left_count + right_count
 
             left_percentage = (left_count / total * 100) if total > 0 else 0.0
             right_percentage = (right_count / total * 100) if total > 0 else 0.0
 
-            comment_count = self._comment_repo.count_by_target(
-                "balance_game", game.id
-            )
+            comment_count = comment_counts.get(game.id, 0)
 
             is_votable = self._is_votable(game.created_at)
 

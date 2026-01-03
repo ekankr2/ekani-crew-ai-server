@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.community.application.port.balance_vote_repository_port import BalanceVoteRepositoryPort
@@ -58,6 +59,26 @@ class MySQLBalanceVoteRepository(BalanceVoteRepositoryPort):
             BalanceVoteModel.user_mbti == mbti,
             BalanceVoteModel.choice == choice.value,
         ).count()
+
+    def count_all_grouped_by_game(self) -> dict[str, dict[str, int]]:
+        """모든 게임의 left/right 투표 수를 한 번에 조회한다"""
+        rows = (
+            self._db.query(
+                BalanceVoteModel.game_id,
+                BalanceVoteModel.choice,
+                func.count().label("cnt"),
+            )
+            .group_by(BalanceVoteModel.game_id, BalanceVoteModel.choice)
+            .all()
+        )
+
+        result: dict[str, dict[str, int]] = {}
+        for game_id, choice, cnt in rows:
+            if game_id not in result:
+                result[game_id] = {"left": 0, "right": 0}
+            result[game_id][choice] = cnt
+
+        return result
 
     def _to_domain(self, model: BalanceVoteModel) -> BalanceVote:
         """ORM 모델을 도메인 객체로 변환한다"""

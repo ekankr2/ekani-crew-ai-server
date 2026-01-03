@@ -30,3 +30,12 @@ class BalanceVoteRepositoryPort(ABC):
     def count_by_mbti_and_choice(self, game_id: str, mbti: str, choice: VoteChoice) -> int:
         """게임 ID, MBTI, 선택지로 투표 수를 계산한다"""
         pass
+
+    @abstractmethod
+    def count_all_grouped_by_game(self) -> dict[str, dict[str, int]]:
+        """모든 게임의 left/right 투표 수를 한 번에 조회한다
+
+        Returns:
+            {game_id: {"left": count, "right": count}, ...}
+        """
+        pass

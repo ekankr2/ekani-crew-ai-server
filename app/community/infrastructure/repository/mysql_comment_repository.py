@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.community.application.port.comment_repository_port import CommentRepositoryPort
@@ -60,6 +61,20 @@ class MySQLCommentRepository(CommentRepositoryPort):
             )
             .count()
         )
+
+    def count_all_by_target_type(self, target_type: CommentTargetType) -> dict[str, int]:
+        """특정 타겟 타입의 모든 댓글 수를 한 번에 조회한다"""
+        rows = (
+            self._db.query(
+                CommentModel.target_id,
+                func.count().label("cnt"),
+            )
+            .filter(CommentModel.target_type == target_type)
+            .group_by(CommentModel.target_id)
+            .all()
+        )
+
+        return {target_id: cnt for target_id, cnt in rows}
 
     def _to_domain(self, model: CommentModel) -> Comment:
         """ORM 모델을 도메인 객체로 변환한다"""

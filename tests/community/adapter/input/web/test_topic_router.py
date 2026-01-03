@@ -75,10 +75,11 @@ def test_get_current_topic_success(client, topic_repo):
     assert data["is_active"] is True
 
 
-def test_get_current_topic_returns_404_when_no_active_topic(client):
-    """활성 토픽이 없으면 404를 반환한다"""
+def test_get_current_topic_returns_null_when_no_active_topic(client):
+    """활성 토픽이 없으면 null을 반환한다"""
     # When: 활성 토픽이 없는 상태에서 현재 토픽 조회 API를 호출하면
     response = client.get("/community/topics/current")
 
-    # Then: 404가 반환된다
-    assert response.status_code == 404
+    # Then: 200 OK와 null이 반환된다
+    assert response.status_code == 200
+    assert response.json() is None

@@ -37,3 +37,10 @@ class FakeCommentRepository(CommentRepositoryPort):
                 if c.target_type == target_type and c.target_id == target_id
             ]
         )
+
+    def count_all_by_target_type(self, target_type: CommentTargetType) -> dict[str, int]:
+        result: dict[str, int] = {}
+        for comment in self._comments.values():
+            if comment.target_type == target_type:
+                result[comment.target_id] = result.get(comment.target_id, 0) + 1
+        return result
