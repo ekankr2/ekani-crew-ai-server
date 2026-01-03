@@ -94,20 +94,23 @@ class HumanQuestionProvider:
             source=MessageSource.HUMAN,
         )
 
-    def select_random_questions(self, questions_per_dimension: int = 3) -> List[str]:
+    def select_random_questions(self, seed: str = None, questions_per_dimension: int = 3) -> List[str]:
         """
         각 차원에서 랜덤하게 질문을 선택합니다.
+        seed를 사용하면 동일한 seed에 대해 항상 같은 질문이 선택됩니다.
 
         Args:
+            seed: 랜덤 시드 (세션 ID 사용 권장)
             questions_per_dimension: 차원당 선택할 질문 수 (기본 3개)
 
         Returns:
             선택된 질문 리스트 (E/I 3개 + S/N 3개 + T/F 3개 + J/P 3개 = 12개)
         """
+        rng = random.Random(seed) if seed else random
         selected = []
         for dimension in ["E/I", "S/N", "T/F", "J/P"]:
             pool = QUESTION_POOL[dimension]
-            chosen = random.sample(pool, min(questions_per_dimension, len(pool)))
+            chosen = rng.sample(pool, min(questions_per_dimension, len(pool)))
             selected.extend(chosen)
         return selected
 

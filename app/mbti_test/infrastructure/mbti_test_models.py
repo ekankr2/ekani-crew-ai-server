@@ -36,6 +36,9 @@ class MBTITestSessionModel(Base):
     # Extended answers 리스트 저장
     answers: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
 
+    # 인사 응답 완료 여부
+    greeting_completed: Mapped[bool] = mapped_column(default=False, nullable=False)
+
     # 결과 저장(분리 컬럼)
     result_mbti: Mapped[str | None] = mapped_column(String(8), nullable=True)
     result_dimension_scores: Mapped[dict | None] = mapped_column(JSON, nullable=True)

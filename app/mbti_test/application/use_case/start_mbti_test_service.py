@@ -21,15 +21,18 @@ class StartMBTITestService(StartMBTITestUseCase):
         self._human_question_provider = human_question_provider
 
     def execute(self, command: StartMBTITestCommand) -> StartMBTITestResponse:
-        # 1. 차원별 3개씩 랜덤 선택 (총 12개)
-        selected_questions = self._human_question_provider.select_random_questions()
+        # 1. 세션 ID 먼저 생성 (seed로 사용)
+        session_id = uuid.uuid4()
 
-        # 2. 눈치 인사 메시지 가져오기
+        # 2. 차원별 3개씩 랜덤 선택 (총 12개) - session_id를 seed로 사용하여 동일한 결과 보장
+        selected_questions = self._human_question_provider.select_random_questions(seed=str(session_id))
+
+        # 3. 눈치 인사 메시지 가져오기
         greeting = self._human_question_provider.get_greeting()
 
-        # 3. 세션 생성 (선택된 질문 저장, greeting_completed=False)
+        # 4. 세션 생성 (선택된 질문 저장, greeting_completed=False)
         session = MBTITestSession(
-            id=uuid.uuid4(),
+            id=session_id,
             user_id=command.user_id,
             test_type=command.test_type,
             status=TestStatus.IN_PROGRESS,

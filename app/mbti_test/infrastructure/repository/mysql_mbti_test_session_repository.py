@@ -24,11 +24,13 @@ class MySQLMBTITestSessionRepository(MBTITestSessionRepositoryPort):
                 user_id=str(session.user_id),
                 status=session.status.value,
                 answers=session.answers,
+                greeting_completed=session.greeting_completed,
             )
             self.db.add(model)
         else:
             model.status = session.status.value
             model.answers = session.answers
+            model.greeting_completed = session.greeting_completed
 
         self.db.commit()
         self.db.refresh(model)
@@ -62,6 +64,7 @@ class MySQLMBTITestSessionRepository(MBTITestSessionRepositoryPort):
             status=TestStatus(model.status),
             created_at=model.created_at,
             turns=turns,
+            greeting_completed=model.greeting_completed,
         )
 
     def add_answer(self, session_id: uuid.UUID, answer: dict) -> None:

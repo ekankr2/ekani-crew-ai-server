@@ -46,6 +46,14 @@ class AnswerQuestionService(AnswerQuestionUseCase):
         if not session:
             raise ValueError(f"Session not found: {command.session_id}")
 
+        # 1.5. session_id를 seed로 사용하여 selected_human_questions 재생성
+        # (DB에 저장하지 않아도 동일한 seed면 항상 같은 결과)
+        session.selected_human_questions = self._human_question_provider.select_random_questions(
+            seed=str(session.id)
+        )
+        # current_question_index도 turns 기반으로 복원
+        session.current_question_index = len(session.turns)
+
         # 2. 인사 응답 처리 (greeting 후 첫 답변)
         if not session.greeting_completed:
             # 인사에 대한 응답은 저장 안 함 (무시)
