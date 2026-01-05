@@ -15,6 +15,12 @@ from app.community.application.use_case.add_balance_game_comment_use_case import
 from app.community.application.use_case.get_balance_game_comments_use_case import (
     GetBalanceGameCommentsUseCase,
 )
+from app.community.application.use_case.update_comment_use_case import (
+    UpdateCommentUseCase,
+)
+from app.community.application.use_case.delete_comment_use_case import (
+    DeleteCommentUseCase,
+)
 from app.community.application.use_case.get_balance_game_list_use_case import (
     GetBalanceGameListUseCase,
 )
@@ -402,3 +408,74 @@ def get_balance_game_detail(
         created_at=detail.created_at,
         user_choice=detail.user_choice,
     )
+
+
+# ================= Comment Update/Delete Endpoints =================
+
+
+class UpdateCommentRequest(BaseModel):
+    author_id: str
+    content: str
+
+
+@balance_game_router.patch("/balance/comments/{comment_id}")
+def update_balance_game_comment(
+    comment_id: str,
+    request: UpdateCommentRequest,
+    comment_repo: CommentRepositoryPort = Depends(get_comment_repository),
+) -> dict:
+    """밸런스 게임 댓글 수정"""
+    use_case = UpdateCommentUseCase(comment_repository=comment_repo)
+
+    try:
+        use_case.execute(
+            comment_id=comment_id,
+            author_id=request.author_id,
+            content=request.content,
+        )
+    except ValueError as e:
+        error_message = str(e)
+        if "찾을 수 없습니다" in error_message:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=error_message,
+            )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=error_message,
+        )
+
+    return {"status": "success", "message": "댓글이 수정되었습니다"}
+
+
+class DeleteCommentRequest(BaseModel):
+    author_id: str
+
+
+@balance_game_router.delete("/balance/comments/{comment_id}")
+def delete_balance_game_comment(
+    comment_id: str,
+    author_id: str,
+    comment_repo: CommentRepositoryPort = Depends(get_comment_repository),
+) -> dict:
+    """밸런스 게임 댓글 삭제"""
+    use_case = DeleteCommentUseCase(comment_repository=comment_repo)
+
+    try:
+        use_case.execute(
+            comment_id=comment_id,
+            author_id=author_id,
+        )
+    except ValueError as e:
+        error_message = str(e)
+        if "찾을 수 없습니다" in error_message:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=error_message,
+            )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=error_message,
+        )
+
+    return {"status": "success", "message": "댓글이 삭제되었습니다"}

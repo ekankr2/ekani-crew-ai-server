@@ -76,6 +76,25 @@ class MySQLCommentRepository(CommentRepositoryPort):
 
         return {target_id: cnt for target_id, cnt in rows}
 
+    def find_by_id(self, comment_id: str) -> Comment | None:
+        """댓글 ID로 댓글을 조회한다"""
+        model = self._db.query(CommentModel).filter(CommentModel.id == comment_id).first()
+        if model is None:
+            return None
+        return self._to_domain(model)
+
+    def update(self, comment: Comment) -> None:
+        """댓글을 수정한다"""
+        self._db.query(CommentModel).filter(CommentModel.id == comment.id).update(
+            {"content": comment.content}
+        )
+        self._db.commit()
+
+    def delete(self, comment_id: str) -> None:
+        """댓글을 삭제한다"""
+        self._db.query(CommentModel).filter(CommentModel.id == comment_id).delete()
+        self._db.commit()
+
     def _to_domain(self, model: CommentModel) -> Comment:
         """ORM 모델을 도메인 객체로 변환한다"""
         return Comment(
