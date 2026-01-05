@@ -8,7 +8,6 @@ from app.community.application.port.balance_vote_repository_port import (
     BalanceVoteRepositoryPort,
 )
 from app.community.application.port.comment_repository_port import CommentRepositoryPort
-from app.community.domain.balance_game import VoteChoice
 from app.user.application.port.user_repository_port import UserRepositoryPort
 
 
@@ -65,9 +64,10 @@ class GetBalanceGameByIdUseCase:
         if game is None:
             raise ValueError("게임을 찾을 수 없습니다")
 
-        # 투표 집계
-        left_votes = self._vote_repo.count_by_choice(game_id, VoteChoice.LEFT)
-        right_votes = self._vote_repo.count_by_choice(game_id, VoteChoice.RIGHT)
+        # 투표 집계 (한 번의 쿼리로 left/right 모두 조회)
+        vote_counts = self._vote_repo.count_by_game(game_id)
+        left_votes = vote_counts["left"]
+        right_votes = vote_counts["right"]
         total_votes = left_votes + right_votes
 
         left_percentage = (left_votes / total_votes * 100) if total_votes > 0 else 0.0
@@ -75,19 +75,22 @@ class GetBalanceGameByIdUseCase:
 
         # 댓글 조회
         comments = self._comment_repo.find_by_target("balance_game", game_id)
-        comment_dtos = []
-        for comment in comments:
-            user = self._user_repo.find_by_id(comment.author_id)
-            author_mbti = user.mbti.value if user and user.mbti else None
-            comment_dtos.append(
-                BalanceGameCommentDTO(
-                    id=comment.id,
-                    author_id=comment.author_id,
-                    author_mbti=author_mbti,
-                    content=comment.content,
-                    created_at=comment.created_at,
-                )
+
+        # 댓글 작성자 MBTI 일괄 조회 (N+1 방지)
+        author_ids = list(set(c.author_id for c in comments))
+        users = self._user_repo.find_by_ids(author_ids)
+        user_mbti_map = {u.id: u.mbti.value if u.mbti else None for u in users}
+
+        comment_dtos = [
+            BalanceGameCommentDTO(
+                id=comment.id,
+                author_id=comment.author_id,
+                author_mbti=user_mbti_map.get(comment.author_id),
+                content=comment.content,
+                created_at=comment.created_at,
             )
+            for comment in comments
+        ]
 
         is_votable = self._is_votable(game.created_at)
 

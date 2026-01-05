@@ -18,3 +18,6 @@ class FakeUserRepository(UserRepositoryPort):
 
     def find_by_email(self, email: str) -> User | None:
         return self._users_by_email.get(email)
+
+    def find_by_ids(self, user_ids: list[str]) -> list[User]:
+        return [self._users_by_id[uid] for uid in user_ids if uid in self._users_by_id]
