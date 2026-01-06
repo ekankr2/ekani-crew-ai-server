@@ -23,5 +23,10 @@ class ChatRoomRepositoryPort(ABC):
 
     @abstractmethod
     def find_by_users(self, user1_id: str, user2_id: str) -> ChatRoom | None:
-        """두 사용자 간의 채팅방을 조회한다 (순서 무관)"""
+        """두 사용자 간의 활성 채팅방을 조회한다 (순서 무관, active 상태만)"""
+        pass
+
+    @abstractmethod
+    def find_by_users_any_status(self, user1_id: str, user2_id: str) -> ChatRoom | None:
+        """두 사용자 간의 채팅방을 조회한다 (순서 무관, 모든 상태)"""
         pass

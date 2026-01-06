@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 
 class ChatRoomPort(ABC):
@@ -8,9 +8,10 @@ class ChatRoomPort(ABC):
     """
 
     @abstractmethod
-    async def create_chat_room(self, match_payload: Dict[str, Any]) -> bool:
+    async def create_chat_room(self, match_payload: Dict[str, Any]) -> Optional[str]:
         """
         매칭된 사용자들의 정보를 받아 채팅방 생성을 요청합니다.
+        기존 비활성 채팅방이 있으면 재활용합니다.
 
         Args:
             match_payload: {
@@ -18,6 +19,10 @@ class ChatRoomPort(ABC):
                 "users": List[{"userId": str, "mbti": str}],
                 "timestamp": str (ISO8601)
             }
+
+        Returns:
+            실제로 사용되는 room_id (기존 방 재활용 시 기존 room_id, 새 방 생성 시 전달받은 roomId)
+            실패 시 None
         """
         pass
 

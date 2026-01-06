@@ -91,11 +91,11 @@ class MatchUseCase:
 
         if partner_ticket:
             # 2. [MATCH-3] 매칭 성공 시 채팅방 데이터 생성
-            room_id = str(uuid.uuid4())
+            new_room_id = str(uuid.uuid4())
             timestamp = datetime.now().isoformat()
 
             chat_payload = {
-                "roomId": room_id,
+                "roomId": new_room_id,
                 "users": [
                     {"userId": my_ticket.user_id, "mbti": my_ticket.mbti.value},
                     {"userId": partner_ticket.user_id, "mbti": partner_ticket.mbti.value}
@@ -104,7 +104,16 @@ class MatchUseCase:
             }
 
             # 3. [MATCH-3] Chat 도메인으로 데이터 전송 (비동기 처리 가능)
-            await self.chat_room_port.create_chat_room(chat_payload)
+            # 기존 비활성 채팅방이 있으면 재활용, 없으면 새로 생성
+            room_id = await self.chat_room_port.create_chat_room(chat_payload)
+            if not room_id:
+                # 채팅방 생성 실패 시 대기열에 다시 등록
+                await self.match_queue.enqueue(my_ticket)
+                await self.match_queue.enqueue(partner_ticket)
+                return {
+                    "status": "error",
+                    "message": "채팅방 생성에 실패했습니다. 다시 시도해주세요."
+                }
 
             # 4. Set matched state for both users (with expiration)
             if self.match_state:

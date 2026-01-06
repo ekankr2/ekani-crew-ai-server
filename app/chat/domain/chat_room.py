@@ -68,3 +68,7 @@ class ChatRoom:
     def deactivate_by_block(self) -> None:
         """차단에 의해 채팅방을 비활성화한다"""
         self.status = "blocked"
+
+    def reactivate(self) -> None:
+        """채팅방을 다시 활성화한다 (재매칭 시)"""
+        self.status = "active"

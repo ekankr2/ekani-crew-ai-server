@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from config.database import get_db_session
 from app.match.application.port.output.chat_room_port import ChatRoomPort
@@ -16,7 +16,7 @@ class ChatClientAdapter(ChatRoomPort):
     Match 도메인의 요청을 Chat 도메인의 유스케이스 호출로 변환하는 어댑터
     """
 
-    async def create_chat_room(self, match_payload: Dict[str, Any]) -> bool:
+    async def create_chat_room(self, match_payload: Dict[str, Any]) -> Optional[str]:
         db = None
         try:
             # 1. 데이터 파싱 (Match 규격 -> Chat 규격 변환)
@@ -43,23 +43,27 @@ class ChatClientAdapter(ChatRoomPort):
             # 3. Chat 유스케이스 실행
             logger.info(f"[Chat Integration] Creating room {room_id} for {user1_id}, {user2_id}")
 
-            chat_usecase.execute(
+            actual_room_id = chat_usecase.execute(
                 room_id=room_id,
                 user1_id=user1_id,
                 user2_id=user2_id,
                 timestamp=timestamp
             )
 
-            logger.info(f"[Chat Integration] Successfully created room: {room_id}")
-            return True
+            if actual_room_id != room_id:
+                logger.info(f"[Chat Integration] Reactivated existing room: {actual_room_id}")
+            else:
+                logger.info(f"[Chat Integration] Successfully created room: {room_id}")
+
+            return actual_room_id
 
         except ValueError as ve:
             logger.error(f"[Chat Integration] Validation Error: {ve}")
-            return False
+            return None
         except Exception as e:
             logger.error(f"[Chat Integration] Failed to create chat room: {e}")
             # 필요 시 여기서 재시도 로직을 추가하거나, 에러를 상위로 전파할 수 있음
-            return False
+            return None
         finally:
             # 4. DB 세션 정리
             if db:

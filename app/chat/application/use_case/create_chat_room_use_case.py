@@ -18,11 +18,17 @@ class CreateChatRoomUseCase:
         timestamp: datetime
     ) -> str:
         """match 도메인에서 전달한 데이터로 채팅방을 생성하고 room_id를 반환한다"""
-        # 두 사용자 간에 이미 채팅방이 있는지 확인 (중복 생성 방지)
-        existing_room_by_users = self._repository.find_by_users(user1_id, user2_id)
-        if existing_room_by_users is not None:
-            # 이미 존재하는 채팅방이 있으면 기존 room_id 반환
-            return existing_room_by_users.id
+        # 두 사용자 간에 채팅방이 있는지 확인 (모든 상태 포함)
+        existing_room = self._repository.find_by_users_any_status(user1_id, user2_id)
+        if existing_room is not None:
+            if existing_room.status == "active":
+                # 이미 활성화된 채팅방이 있으면 기존 room_id 반환
+                return existing_room.id
+            else:
+                # 비활성 채팅방이 있으면 재활용 (active로 변경)
+                existing_room.reactivate()
+                self._repository.save(existing_room)
+                return existing_room.id
 
         # room_id로 이미 존재하는 채팅방인지 확인
         existing_room_by_id = self._repository.find_by_id(room_id)
