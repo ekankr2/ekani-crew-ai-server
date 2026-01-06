@@ -41,11 +41,11 @@ class MatchService:
                     break
 
                 # 차단 관계 확인
-                is_blocked_by_me = await self.block_repository.find_by_blocker_and_blocked(
+                is_blocked_by_me = self.block_repository.find_by_blocker_and_blocked(
                     blocker_id=my_ticket.user_id,
                     blocked_user_id=partner_ticket.user_id
                 )
-                i_am_blocked = await self.block_repository.find_by_blocker_and_blocked(
+                i_am_blocked = self.block_repository.find_by_blocker_and_blocked(
                     blocker_id=partner_ticket.user_id,
                     blocked_user_id=my_ticket.user_id
                 )

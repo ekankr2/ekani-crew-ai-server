@@ -14,13 +14,14 @@ class MySQLBlockRepository(BlockRepositoryPort):
         """차단을 저장한다"""
         block_model = self._to_model(block)
         self._db.merge(block_model)
+        self._db.commit()
 
     def find_by_id(self, block_id: str) -> Block | None:
         """id로 차단을 조회한다"""
         block_model = self._db.query(BlockModel).filter(BlockModel.id == block_id).first()
         return self._to_domain(block_model) if block_model else None
 
-    async def find_by_blocker_and_blocked(self, blocker_id: str, blocked_user_id: str) -> Block | None:
+    def find_by_blocker_and_blocked(self, blocker_id: str, blocked_user_id: str) -> Block | None:
         """특정 차단 관계를 조회한다"""
         block_model = self._db.query(BlockModel).filter(
             BlockModel.blocker_id == blocker_id,
@@ -33,6 +34,7 @@ class MySQLBlockRepository(BlockRepositoryPort):
         block_model = self._db.query(BlockModel).filter(BlockModel.id == str(block.id)).first()
         if block_model:
             self._db.delete(block_model)
+            self._db.commit()
 
     def get_blocked_user_ids(self, blocker_id: str) -> list[str]:
         """차단한 유저 id 목록을 조회한다"""
