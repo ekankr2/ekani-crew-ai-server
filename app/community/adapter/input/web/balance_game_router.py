@@ -15,6 +15,12 @@ from app.community.application.use_case.add_balance_game_comment_use_case import
 from app.community.application.use_case.get_balance_game_comments_use_case import (
     GetBalanceGameCommentsUseCase,
 )
+from app.community.application.use_case.update_comment_use_case import (
+    UpdateCommentUseCase,
+)
+from app.community.application.use_case.delete_comment_use_case import (
+    DeleteCommentUseCase,
+)
 from app.community.application.use_case.get_balance_game_list_use_case import (
     GetBalanceGameListUseCase,
 )
@@ -59,7 +65,6 @@ class BalanceGameResponse(BaseModel):
     option_left: str
     option_right: str
     week_of: str
-    is_active: bool
 
 
 class BalanceGameListItemResponse(BaseModel):
@@ -101,6 +106,7 @@ class BalanceGameDetailResponse(BaseModel):
     comments: list[BalanceGameDetailCommentResponse]
     is_votable: bool
     created_at: datetime
+    user_choice: str | None = None  # 사용자의 투표 선택 (left/right/None)
 
 
 class VoteRequest(BaseModel):
@@ -146,7 +152,6 @@ def get_current_balance_game(
         option_left=game.option_left,
         option_right=game.option_right,
         week_of=game.week_of,
-        is_active=game.is_active,
     )
 
 
@@ -354,6 +359,7 @@ def get_balance_game_list(
 @balance_game_router.get("/balance/{game_id}")
 def get_balance_game_detail(
     game_id: str,
+    user_id: str | None = None,
     game_repo: BalanceGameRepositoryPort = Depends(get_balance_game_repository),
     vote_repo: BalanceVoteRepositoryPort = Depends(get_balance_vote_repository),
     comment_repo: CommentRepositoryPort = Depends(get_comment_repository),
@@ -368,7 +374,7 @@ def get_balance_game_detail(
     )
 
     try:
-        detail = use_case.execute(game_id)
+        detail = use_case.execute(game_id, user_id=user_id)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -400,4 +406,76 @@ def get_balance_game_detail(
         comments=comments,
         is_votable=detail.is_votable,
         created_at=detail.created_at,
+        user_choice=detail.user_choice,
     )
+
+
+# ================= Comment Update/Delete Endpoints =================
+
+
+class UpdateCommentRequest(BaseModel):
+    author_id: str
+    content: str
+
+
+@balance_game_router.patch("/balance/comments/{comment_id}")
+def update_balance_game_comment(
+    comment_id: str,
+    request: UpdateCommentRequest,
+    comment_repo: CommentRepositoryPort = Depends(get_comment_repository),
+) -> dict:
+    """밸런스 게임 댓글 수정"""
+    use_case = UpdateCommentUseCase(comment_repository=comment_repo)
+
+    try:
+        use_case.execute(
+            comment_id=comment_id,
+            author_id=request.author_id,
+            content=request.content,
+        )
+    except ValueError as e:
+        error_message = str(e)
+        if "찾을 수 없습니다" in error_message:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=error_message,
+            )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=error_message,
+        )
+
+    return {"status": "success", "message": "댓글이 수정되었습니다"}
+
+
+class DeleteCommentRequest(BaseModel):
+    author_id: str
+
+
+@balance_game_router.delete("/balance/comments/{comment_id}")
+def delete_balance_game_comment(
+    comment_id: str,
+    author_id: str,
+    comment_repo: CommentRepositoryPort = Depends(get_comment_repository),
+) -> dict:
+    """밸런스 게임 댓글 삭제"""
+    use_case = DeleteCommentUseCase(comment_repository=comment_repo)
+
+    try:
+        use_case.execute(
+            comment_id=comment_id,
+            author_id=author_id,
+        )
+    except ValueError as e:
+        error_message = str(e)
+        if "찾을 수 없습니다" in error_message:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=error_message,
+            )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=error_message,
+        )
+
+    return {"status": "success", "message": "댓글이 삭제되었습니다"}

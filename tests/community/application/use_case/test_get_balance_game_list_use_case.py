@@ -44,7 +44,7 @@ class TestGetBalanceGameListUseCase:
             option_left="짜장면",
             option_right="짬뽕",
             week_of="2024-W01",
-            is_active=True,
+            
             created_at=datetime.now(),
         )
         self.game_repo.save(game)
@@ -63,7 +63,7 @@ class TestGetBalanceGameListUseCase:
             option_left="짜장면",
             option_right="짬뽕",
             week_of="2024-W01",
-            is_active=True,
+            
             created_at=datetime.now(),
         )
         self.game_repo.save(game)
@@ -102,7 +102,7 @@ class TestGetBalanceGameListUseCase:
             option_left="짜장면",
             option_right="짬뽕",
             week_of="2024-W01",
-            is_active=True,
+            
             created_at=datetime.now(),
         )
         self.game_repo.save(game)
@@ -131,7 +131,7 @@ class TestGetBalanceGameListUseCase:
             option_left="짜장면",
             option_right="짬뽕",
             week_of="2024-W01",
-            is_active=True,
+            
             created_at=datetime.now() - timedelta(days=15),  # 15일 전
         )
         self.game_repo.save(game)
@@ -148,7 +148,7 @@ class TestGetBalanceGameListUseCase:
             option_left="짜장면",
             option_right="짬뽕",
             week_of="2024-W01",
-            is_active=False,
+            
             created_at=datetime.now() - timedelta(days=35),  # 35일 전
         )
         self.game_repo.save(game)
@@ -166,7 +166,7 @@ class TestGetBalanceGameListUseCase:
                 option_left="왼쪽",
                 option_right="오른쪽",
                 week_of=f"2024-W0{i+1}",
-                is_active=i == 2,  # 마지막만 active
+                
                 created_at=datetime.now() - timedelta(days=30 - i * 10),
             )
             self.game_repo.save(game)

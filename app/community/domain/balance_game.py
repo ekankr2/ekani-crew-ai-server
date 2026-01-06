@@ -18,7 +18,6 @@ class BalanceGame:
         option_left: str,
         option_right: str,
         week_of: str,
-        is_active: bool = True,
         created_at: datetime | None = None,
     ):
         self.id = id
@@ -26,7 +25,6 @@ class BalanceGame:
         self.option_left = option_left
         self.option_right = option_right
         self.week_of = week_of
-        self.is_active = is_active
         self.created_at = created_at or datetime.now()
 
 

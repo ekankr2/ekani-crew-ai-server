@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+import json
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 from sqlalchemy.orm import Session
 from uuid import uuid4
 
+from config.connection_manager import manager
 from app.chat.application.use_case.get_chat_history_use_case import GetChatHistoryUseCase
 from app.chat.application.use_case.get_my_chat_rooms_use_case import GetMyChatRoomsUseCase
 from app.chat.application.use_case.mark_chat_room_as_read_use_case import MarkChatRoomAsReadUseCase
@@ -66,6 +68,7 @@ class ChatRoomPreviewResponse(BaseModel):
     user1_id: str
     user2_id: str
     created_at: datetime
+    status: str = "active"
     latest_message: Optional[ChatMessageResponse] = None
     unread_count: int = 0
 
@@ -135,6 +138,7 @@ def get_my_chat_rooms(
             user1_id=preview.user1_id,
             user2_id=preview.user2_id,
             created_at=preview.created_at,
+            status=preview.status,
             latest_message=latest_message_response,
             unread_count=preview.unread_count
         )
@@ -161,10 +165,21 @@ def mark_room_as_read(
     return {"status": "success", "message": "채팅방이 읽음 처리되었습니다"}
 
 
+async def _notify_partner_left(room_id: str, left_user_id: str):
+    """상대방에게 파트너가 나갔음을 알린다"""
+    message = json.dumps({
+        "type": "partner_left",
+        "room_id": room_id,
+        "user_id": left_user_id
+    })
+    await manager.broadcast(message, room_id)
+
+
 @chat_router.post("/chat/{room_id}/leave")
-def leave_chat_room(
+async def leave_chat_room(
     room_id: str,
     user_id: str,
+    background_tasks: BackgroundTasks,
     room_repository: ChatRoomRepositoryPort = Depends(get_chat_room_repository)
 ):
     """
@@ -175,6 +190,9 @@ def leave_chat_room(
     """
     use_case = LeaveChatRoomUseCase(room_repository)
     use_case.execute(room_id, user_id)
+
+    # WebSocket으로 상대방에게 알림
+    await _notify_partner_left(room_id, user_id)
 
     return {"status": "success", "message": "채팅방을 나갔습니다"}
 

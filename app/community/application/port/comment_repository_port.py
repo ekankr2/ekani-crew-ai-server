@@ -43,3 +43,18 @@ class CommentRepositoryPort(ABC):
             {target_id: count, ...}
         """
         pass
+
+    @abstractmethod
+    def find_by_id(self, comment_id: str) -> Comment | None:
+        """댓글 ID로 댓글을 조회한다"""
+        pass
+
+    @abstractmethod
+    def update(self, comment: Comment) -> None:
+        """댓글을 수정한다"""
+        pass
+
+    @abstractmethod
+    def delete(self, comment_id: str) -> None:
+        """댓글을 삭제한다"""
+        pass

@@ -43,50 +43,40 @@ class TestBalanceGameRepository:
         assert found is None
 
     def test_find_current_active(self, repository):
-        """현재 활성화된 밸런스 게임을 조회할 수 있다"""
-        # Given: 활성/비활성 게임
-        active_game = BalanceGame(
-            id="game-active",
-            question="활성 게임",
-            option_left="왼쪽",
-            option_right="오른쪽",
-            week_of="2025-W01",
-            is_active=True,
-        )
-        inactive_game = BalanceGame(
-            id="game-inactive",
-            question="비활성 게임",
+        """가장 최근 밸런스 게임을 조회할 수 있다"""
+        # Given: 여러 게임
+        from datetime import datetime, timedelta
+
+        older_game = BalanceGame(
+            id="game-older",
+            question="오래된 게임",
             option_left="왼쪽",
             option_right="오른쪽",
             week_of="2024-W52",
-            is_active=False,
+            created_at=datetime.now() - timedelta(days=7),
+        )
+        newer_game = BalanceGame(
+            id="game-newer",
+            question="최신 게임",
+            option_left="왼쪽",
+            option_right="오른쪽",
+            week_of="2025-W01",
+            created_at=datetime.now(),
         )
 
-        repository.save(active_game)
-        repository.save(inactive_game)
+        repository.save(older_game)
+        repository.save(newer_game)
 
         # When: 현재 활성 게임을 조회하면
         current = repository.find_current_active()
 
-        # Then: 활성 게임만 반환된다
+        # Then: 가장 최신 게임이 반환된다
         assert current is not None
-        assert current.id == "game-active"
-        assert current.is_active is True
+        assert current.id == "game-newer"
 
-    def test_find_current_active_returns_none_when_no_active(self, repository):
-        """활성 게임이 없으면 None을 반환한다"""
-        # Given: 비활성 게임만 존재
-        inactive_game = BalanceGame(
-            id="game-inactive",
-            question="비활성 게임",
-            option_left="왼쪽",
-            option_right="오른쪽",
-            week_of="2024-W52",
-            is_active=False,
-        )
-        repository.save(inactive_game)
-
-        # When: 현재 활성 게임을 조회하면
+    def test_find_current_active_returns_none_when_empty(self, repository):
+        """게임이 없으면 None을 반환한다"""
+        # When: 게임이 없을 때 조회하면
         current = repository.find_current_active()
 
         # Then: None을 반환한다

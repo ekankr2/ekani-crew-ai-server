@@ -39,3 +39,10 @@ class FakeBalanceVoteRepository(BalanceVoteRepositoryPort):
                 result[vote.game_id] = {"left": 0, "right": 0}
             result[vote.game_id][vote.choice.value] += 1
         return result
+
+    def count_by_game(self, game_id: str) -> dict[str, int]:
+        result = {"left": 0, "right": 0}
+        for vote in self._votes.values():
+            if vote.game_id == game_id:
+                result[vote.choice.value] += 1
+        return result

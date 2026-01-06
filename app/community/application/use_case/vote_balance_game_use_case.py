@@ -32,10 +32,6 @@ class VoteBalanceGameUseCase:
         if game is None:
             raise ValueError("게임을 찾을 수 없습니다")
 
-        # 게임 활성화 여부 확인
-        if not game.is_active:
-            raise ValueError("비활성화된 게임입니다")
-
         # 투표 기간 확인 (30일 이내)
         if not self._is_votable(game.created_at):
             raise ValueError("투표 기간이 종료되었습니다")

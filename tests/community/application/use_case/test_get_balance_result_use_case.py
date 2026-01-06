@@ -31,7 +31,7 @@ def game_with_votes(game_repository, vote_repository):
         option_left="솔직하게 화난다고 말한다",
         option_right="괜찮다고 하고 넘어간다",
         week_of="2025-W01",
-        is_active=True,
+        
     )
     game_repository.save(game)
 
@@ -105,7 +105,7 @@ class TestGetBalanceResultUseCase:
             option_left="왼쪽",
             option_right="오른쪽",
             week_of="2025-W01",
-            is_active=True,
+            
         )
         game_repository.save(game)
 

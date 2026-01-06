@@ -20,3 +20,8 @@ class UserRepositoryPort(ABC):
     def find_by_email(self, email: str) -> User | None:
         """email로 유저를 조회한다"""
         pass
+
+    @abstractmethod
+    def find_by_ids(self, user_ids: list[str]) -> list[User]:
+        """여러 id로 유저들을 한 번에 조회한다"""
+        pass

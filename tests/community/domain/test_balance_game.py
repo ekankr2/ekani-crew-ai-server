@@ -31,7 +31,6 @@ def test_balance_game_creates_with_required_fields():
     assert game.option_left == option_left
     assert game.option_right == option_right
     assert game.week_of == week_of
-    assert game.is_active is True  # 기본값
     assert game.created_at == created_at
 
 

@@ -80,6 +80,24 @@ class MySQLBalanceVoteRepository(BalanceVoteRepositoryPort):
 
         return result
 
+    def count_by_game(self, game_id: str) -> dict[str, int]:
+        """게임의 left/right 투표 수를 한 번에 조회한다"""
+        rows = (
+            self._db.query(
+                BalanceVoteModel.choice,
+                func.count().label("cnt"),
+            )
+            .filter(BalanceVoteModel.game_id == game_id)
+            .group_by(BalanceVoteModel.choice)
+            .all()
+        )
+
+        result = {"left": 0, "right": 0}
+        for choice, cnt in rows:
+            result[choice] = cnt
+
+        return result
+
     def _to_domain(self, model: BalanceVoteModel) -> BalanceVote:
         """ORM 모델을 도메인 객체로 변환한다"""
         choice = VoteChoice.LEFT if model.choice == "left" else VoteChoice.RIGHT

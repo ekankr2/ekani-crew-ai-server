@@ -19,7 +19,6 @@ class MySQLBalanceGameRepository(BalanceGameRepositoryPort):
             option_left=game.option_left,
             option_right=game.option_right,
             week_of=game.week_of,
-            is_active=game.is_active,
             created_at=game.created_at,
         )
         self._db.merge(game_model)
@@ -37,10 +36,10 @@ class MySQLBalanceGameRepository(BalanceGameRepositoryPort):
         return self._to_domain(game_model)
 
     def find_current_active(self) -> BalanceGame | None:
-        """현재 활성화된 밸런스 게임을 조회한다"""
-        game_model = self._db.query(BalanceGameModel).filter(
-            BalanceGameModel.is_active == True
-        ).order_by(BalanceGameModel.created_at.desc()).first()
+        """가장 최근 밸런스 게임을 조회한다"""
+        game_model = self._db.query(BalanceGameModel).order_by(
+            BalanceGameModel.created_at.desc()
+        ).first()
 
         if game_model is None:
             return None
@@ -63,6 +62,5 @@ class MySQLBalanceGameRepository(BalanceGameRepositoryPort):
             option_left=model.option_left,
             option_right=model.option_right,
             week_of=model.week_of,
-            is_active=model.is_active,
             created_at=model.created_at,
         )

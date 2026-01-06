@@ -48,6 +48,7 @@ class GetMyChatRoomsUseCase:
                 user1_id=room.user1_id,
                 user2_id=room.user2_id,
                 created_at=room.created_at,
+                status=room.status,
                 latest_message=latest_message,
                 unread_count=unread_count
             )

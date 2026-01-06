@@ -12,5 +12,6 @@ class ChatRoomWithPreviewDTO:
     user1_id: str
     user2_id: str
     created_at: datetime
+    status: str = "active"
     latest_message: Optional[ChatMessage] = None
     unread_count: int = 0

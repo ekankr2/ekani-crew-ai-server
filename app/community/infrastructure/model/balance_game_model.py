@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, Boolean, DateTime
+from sqlalchemy import Column, String, Text, DateTime
 from config.database import Base
 
 
@@ -12,5 +12,4 @@ class BalanceGameModel(Base):
     option_left = Column(String(255), nullable=False)
     option_right = Column(String(255), nullable=False)
     week_of = Column(String(10), nullable=False)  # e.g., "2025-W01"
-    is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, nullable=False)

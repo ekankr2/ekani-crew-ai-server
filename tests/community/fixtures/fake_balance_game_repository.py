@@ -15,10 +15,10 @@ class FakeBalanceGameRepository(BalanceGameRepositoryPort):
         return self._games.get(game_id)
 
     def find_current_active(self) -> BalanceGame | None:
-        for game in self._games.values():
-            if game.is_active:
-                return game
-        return None
+        games = list(self._games.values())
+        if not games:
+            return None
+        return max(games, key=lambda g: g.created_at)
 
     def find_all(self) -> list[BalanceGame]:
         games = list(self._games.values())
