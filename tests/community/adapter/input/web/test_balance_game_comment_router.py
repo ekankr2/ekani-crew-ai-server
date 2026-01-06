@@ -70,7 +70,7 @@ class TestBalanceGameCommentRouter:
             option_left="성격 궁합",
             option_right="외모",
             week_of=datetime(2025, 1, 6),
-            is_active=True,
+            
         )
         fake_balance_game_repository.save(game)
 
@@ -117,7 +117,7 @@ class TestBalanceGameCommentRouter:
             option_left="왼쪽",
             option_right="오른쪽",
             week_of=datetime(2025, 1, 6),
-            is_active=True,
+            
         )
         fake_balance_game_repository.save(game)
 

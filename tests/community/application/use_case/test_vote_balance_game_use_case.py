@@ -30,7 +30,6 @@ def active_game(game_repository):
         option_left="솔직하게 화난다고 말한다",
         option_right="괜찮다고 하고 넘어간다",
         week_of="2025-W01",
-        is_active=True,
     )
     game_repository.save(game)
     return game
@@ -112,28 +111,6 @@ class TestVoteBalanceGameUseCase:
                 choice=VoteChoice.LEFT,
             )
 
-    def test_vote_on_inactive_game_raises_error(self, use_case, game_repository):
-        """비활성화된 게임에 투표 시 에러 발생"""
-        # Given: 비활성화된 게임
-        inactive_game = BalanceGame(
-            id="game-inactive",
-            question="비활성 게임",
-            option_left="왼쪽",
-            option_right="오른쪽",
-            week_of="2024-W52",
-            is_active=False,
-        )
-        game_repository.save(inactive_game)
-
-        # When/Then: 비활성 게임에 투표하면 에러 발생
-        with pytest.raises(ValueError, match="비활성화된 게임입니다"):
-            use_case.execute(
-                game_id="game-inactive",
-                user_id="user-123",
-                user_mbti="INTJ",
-                choice=VoteChoice.LEFT,
-            )
-
     def test_vote_on_expired_game_raises_error(self, use_case, game_repository):
         """한 달이 경과한 게임에 투표 시 에러 발생"""
         # Given: 35일 전에 생성된 게임
@@ -143,7 +120,6 @@ class TestVoteBalanceGameUseCase:
             option_left="왼쪽",
             option_right="오른쪽",
             week_of="2024-W01",
-            is_active=True,  # 아직 활성 상태
             created_at=datetime.now() - timedelta(days=35),
         )
         game_repository.save(expired_game)

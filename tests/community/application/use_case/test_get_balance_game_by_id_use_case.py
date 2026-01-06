@@ -49,7 +49,7 @@ class TestGetBalanceGameByIdUseCase:
             option_left="짜장면",
             option_right="짬뽕",
             week_of="2024-W01",
-            is_active=True,
+            
             created_at=datetime.now(),
         )
         self.game_repo.save(game)
@@ -69,7 +69,7 @@ class TestGetBalanceGameByIdUseCase:
             option_left="짜장면",
             option_right="짬뽕",
             week_of="2024-W01",
-            is_active=True,
+            
             created_at=datetime.now(),
         )
         self.game_repo.save(game)
@@ -111,7 +111,7 @@ class TestGetBalanceGameByIdUseCase:
             option_left="짜장면",
             option_right="짬뽕",
             week_of="2024-W01",
-            is_active=True,
+            
             created_at=datetime.now(),
         )
         self.game_repo.save(game)
@@ -146,7 +146,7 @@ class TestGetBalanceGameByIdUseCase:
             option_left="짜장면",
             option_right="짬뽕",
             week_of="2024-W01",
-            is_active=True,
+            
             created_at=datetime.now() - timedelta(days=15),
         )
         self.game_repo.save(game)
@@ -163,7 +163,7 @@ class TestGetBalanceGameByIdUseCase:
             option_left="짜장면",
             option_right="짬뽕",
             week_of="2024-W01",
-            is_active=False,
+            
             created_at=datetime.now() - timedelta(days=35),
         )
         self.game_repo.save(game)

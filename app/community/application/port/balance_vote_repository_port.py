@@ -39,3 +39,12 @@ class BalanceVoteRepositoryPort(ABC):
             {game_id: {"left": count, "right": count}, ...}
         """
         pass
+
+    @abstractmethod
+    def count_by_game(self, game_id: str) -> dict[str, int]:
+        """게임의 left/right 투표 수를 한 번에 조회한다
+
+        Returns:
+            {"left": count, "right": count}
+        """
+        pass

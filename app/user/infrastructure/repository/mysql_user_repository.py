@@ -56,6 +56,17 @@ class MySQLUserRepository(UserRepositoryPort):
 
         return self._to_domain(model)
 
+    def find_by_ids(self, user_ids: list[str]) -> list[User]:
+        """여러 id로 유저들을 한 번에 조회한다"""
+        if not user_ids:
+            return []
+
+        models = self._db.query(UserModel).filter(
+            UserModel.id.in_(user_ids)
+        ).all()
+
+        return [self._to_domain(m) for m in models]
+
     def _to_domain(self, model: UserModel) -> User:
         """ORM 모델을 도메인 객체로 변환"""
         return User(
